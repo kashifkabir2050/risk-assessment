@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Risk Assessment Portal · Pakistan Islamia HSS Sharjah</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#1a56db;--blue-light:#e8f0fe;--blue-dark:#1241a8;
+  --red:#dc2626;--red-light:#fef2f2;
+  --amber:#d97706;--amber-light:#fffbeb;
+  --green:#16a34a;--green-light:#f0fdf4;
+  --bg:#f8fafc;--surface:#ffffff;
+  --border:#e2e8f0;--border2:#cbd5e1;
+  --text:#0f172a;--text2:#475569;--text3:#94a3b8;
+  --radius:10px;--radius-lg:14px;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:0 4px 12px rgba(0,0,0,.10);
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+
+/* HEADER */
+.header{background:var(--blue);color:#fff;padding:0 1.5rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(26,86,219,.35);}
+.header-left{display:flex;align-items:center;gap:12px;}
+.header-logo{font-family:'Playfair Display',serif;font-size:17px;letter-spacing:-.01em;}
+.header-tag{font-size:11px;opacity:.75;letter-spacing:.04em;text-transform:uppercase;border-left:1px solid rgba(255,255,255,.3);padding-left:12px;}
+.header-link{font-size:12px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:5px 14px;border-radius:6px;text-decoration:none;transition:background .15s;}
+.header-link:hover{background:rgba(255,255,255,.25);}
+
+/* TYPE SELECTOR */
+.type-banner{background:var(--surface);border-bottom:1px solid var(--border);padding:1.25rem 1.5rem;}
+.type-banner-inner{max-width:800px;margin:0 auto;}
+.type-banner h2{font-size:13px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.75rem;}
+.type-tabs{display:flex;gap:8px;flex-wrap:wrap;}
+.type-tab{padding:9px 22px;font-size:13px;font-weight:500;font-family:'Inter',sans-serif;border-radius:var(--radius);border:1.5px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:7px;}
+.type-tab:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-light);}
+.type-tab.active{background:var(--blue);border-color:var(--blue);color:#fff;}
+.type-tab .icon{font-size:16px;}
+
+/* MAIN WRAP */
+.wrap{max-width:800px;margin:2rem auto;padding:0 1.25rem 4rem;}
+
+/* FORM CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow:hidden;margin-bottom:1.25rem;}
+.card-head{padding:.9rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.card-head-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.card-head h3{font-size:13px;font-weight:600;color:var(--text);letter-spacing:.01em;}
+.card-body{padding:1.1rem 1.25rem;}
+
+/* GRID */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+@media(max-width:540px){.grid2,.grid3{grid-template-columns:1fr;}}
+
+/* FIELDS */
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;}
+.field input,.field select,.field textarea{
+  width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);
+  padding:8px 11px;font-size:13px;color:var(--text);font-family:'Inter',sans-serif;outline:none;transition:border .15s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue);background:#fff;}
+.field textarea{resize:vertical;min-height:70px;}
+
+/* RISK TABLE */
+.risk-table-wrap{overflow-x:auto;}
+.risk-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.risk-table th{background:#f1f5f9;padding:9px 12px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;text-align:left;white-space:nowrap;border-bottom:1.5px solid var(--border2);}
+.risk-table td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:top;}
+.risk-table tr:last-child td{border-bottom:none;}
+.risk-table tr:hover td{background:#f8fafc;}
+.risk-table td:first-child{font-weight:600;color:var(--text);white-space:nowrap;width:100px;}
+.risk-cell select{width:100%;min-width:150px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;font-family:'Inter',sans-serif;color:var(--text);outline:none;}
+.risk-cell select:focus{border-color:var(--blue);}
+.risk-cell input[type=text]{width:100%;min-width:120px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;font-family:'Inter',sans-serif;color:var(--text);outline:none;}
+.risk-cell input:focus{border-color:var(--blue);}
+
+/* RISK LEVEL BADGES */
+.risk-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;}
+.risk-none{background:#f1f5f9;color:var(--text3);}
+.risk-low{background:#dcfce7;color:#166534;}
+.risk-medium{background:#fef9c3;color:#854d0e;}
+.risk-high{background:#fee2e2;color:#991b1b;}
+.risk-critical{background:#fce7f3;color:#9d174d;}
+
+/* SIGNATURE */
+.sig-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+@media(max-width:540px){.sig-row{grid-template-columns:1fr;}}
+
+/* SUBMIT */
+.submit-area{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:1.5rem;}
+.answered-count{font-size:12px;color:var(--text3);}
+.btn-submit{background:var(--blue);color:#fff;border:none;border-radius:var(--radius);padding:10px 28px;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:7px;}
+.btn-submit:hover{background:var(--blue-dark);}
+.btn-submit:disabled{opacity:.4;cursor:not-allowed;}
+.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ERROR / SUCCESS */
+.alert{padding:10px 14px;border-radius:var(--radius);font-size:13px;margin-bottom:1rem;display:none;}
+.alert-error{background:var(--red-light);border:1px solid #fecaca;color:var(--red);}
+.alert-success{background:var(--green-light);border:1px solid #bbf7d0;color:#166534;}
+
+/* PROGRESS */
+.progress-wrap{height:3px;background:var(--border);border-radius:2px;margin-bottom:.75rem;overflow:hidden;}
+.progress-fill{height:100%;background:var(--blue);border-radius:2px;transition:width .3s;}
+
+/* SUCCESS SCREEN */
+.success-screen{display:none;text-align:center;padding:3rem 1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);}
+.success-icon{width:60px;height:60px;background:var(--green-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:26px;}
+.success-screen h2{font-size:18px;font-weight:600;margin-bottom:.4rem;}
+.success-screen p{font-size:13px;color:var(--text2);margin-bottom:1.25rem;}
+.btn-new{background:var(--blue);color:#fff;border:none;border-radius:var(--radius);padding:9px 22px;font-size:13px;font-weight:500;font-family:'Inter',sans-serif;cursor:pointer;}
+
+/* SECTION TITLE */
+.section-title{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin:1.5rem 0 .75rem;border-bottom:1px solid var(--border);padding-bottom:.5rem;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <span class="header-logo">Risk Assessment Portal</span>
+    <span class="header-tag">Pakistan Islamia HSS · Sharjah</span>
+  </div>
+  <a href="dashboard.html" class="header-link">📊 Admin Dashboard</a>
+</div>
+
+<div class="type-banner">
+  <div class="type-banner-inner">
+    <h2>Select Assessment Type</h2>
+    <div class="type-tabs">
+      <button class="type-tab active" onclick="setType('classroom')" id="tab-classroom">
+        <span class="icon">🏫</span> Classroom Risk Assessment
+      </button>
+      <button class="type-tab" onclick="setType('outdoor')" id="tab-outdoor">
+        <span class="icon">🏃</span> Outdoor / Play Area Risk Assessment
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="alert alert-error" id="alertError"></div>
+
+  <div id="mainForm">
+    <!-- META INFO -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-dot" id="metaDot" style="background:#1a56db"></div>
+        <h3 id="formTitle">Classroom Risk Assessment</h3>
+      </div>
+      <div class="card-body">
+        <div class="grid3" style="margin-bottom:14px;" id="classroomOnlyField">
+          <div class="field">
+            <label>Classroom Name</label>
+            <input type="text" id="fClassroom" placeholder="e.g. Room 12A">
+          </div>
+          <div class="field">
+            <label>Assessment Period From</label>
+            <input type="date" id="fDateFrom">
+          </div>
+          <div class="field">
+            <label>Assessment Period To</label>
+            <input type="date" id="fDateTo">
+          </div>
+        </div>
+        <div class="grid2" id="outdoorOnlyField" style="display:none;margin-bottom:14px;">
+          <div class="field">
+            <label>Assessment Period From</label>
+            <input type="date" id="fDateFromO">
+          </div>
+          <div class="field">
+            <label>Assessment Period To</label>
+            <input type="date" id="fDateToO">
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label>Assessment Conducted By</label>
+            <input type="text" id="fConductedBy" placeholder="Full name">
+          </div>
+          <div class="field">
+            <label>Date of Submission</label>
+            <input type="date" id="fSubmitDate">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="progress-wrap"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+    <!-- RISK TABLE CARD -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-dot" style="background:#d97706"></div>
+        <h3>Daily Risk Assessment (Mon–Thu)</h3>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div class="risk-table-wrap">
+          <table class="risk-table" id="riskTable">
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Safety Risk</th>
+                <th>Risk Level</th>
+                <th>Equipment Risk</th>
+                <th>Risk Level</th>
+                <th>General Risk</th>
+                <th>Risk Level</th>
+                <th>Comments</th>
+              </tr>
+            </thead>
+            <tbody id="riskTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- APPROVAL SIGNATURES -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-dot" style="background:#7c3aed"></div>
+        <h3>Approval Signatures</h3>
+      </div>
+      <div class="card-body">
+        <div class="sig-row">
+          <div class="field"><label>Name</label><input type="text" id="sigName" placeholder="Approver name"></div>
+          <div class="field"><label>Title</label><input type="text" id="sigTitle" placeholder="e.g. Head Teacher"></div>
+          <div class="field"><label>Date</label><input type="date" id="sigDate"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTES -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-dot" style="background:#0891b2"></div>
+        <h3>Additional Notes</h3>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <textarea id="fNotes" placeholder="Any additional observations, follow-up actions, or notes..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUBMIT -->
+    <div class="submit-area">
+      <span class="answered-count" id="answeredCount">Complete all fields to submit</span>
+      <button class="btn-submit" id="submitBtn" onclick="handleSubmit()">
+        Submit Assessment
+      </button>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="success-screen" id="successScreen">
+    <div class="success-icon">✓</div>
+    <h2>Assessment Submitted</h2>
+    <p>The risk assessment has been saved successfully. The admin dashboard will reflect this data.</p>
+    <button class="btn-new" onclick="resetForm()">Submit Another Assessment</button>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyB7-eMJDxpb9rYDSYA08vO--oTqJYWqBKs",
+    authDomain: "wellbeing-portal.firebaseapp.com",
+    projectId: "wellbeing-portal",
+    storageBucket: "wellbeing-portal.firebasestorage.app",
+    messagingSenderId: "1001968246301",
+    appId: "1:1001968246301:web:6957a00ef47293db2970f4"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+  window.__ra_db         = db;
+  window.__ra_addDoc     = addDoc;
+  window.__ra_collection = collection;
+  window.__ra_ts         = serverTimestamp;
+</script>
+
+<script>
+// ── Risk options per type ──────────────────────────────────────
+const RISKS = {
+  classroom: {
+    safety: [
+      'None observed',
+      'Tripping hazards (cables/cords)',
+      'Slippery floors',
+      'Inadequate lighting',
+      'Unsafe electrical outlets',
+      'Obstructed emergency exits',
+      'Damaged furniture',
+      'Debris fall',
+      'Smoke inhalation hazard'
+    ],
+    equipment: [
+      'None observed',
+      'Malfunctioning projector',
+      'Inadequate seating',
+      'Lack of proper ventilation',
+      'Unstable furniture',
+      'Fire alarm / emergency system malfunction',
+      'Power outage affecting safety systems'
+    ],
+    general: [
+      'None observed',
+      'Lack of adequate teaching materials',
+      'Communication breakdown',
+      'Classroom distractions',
+      'Lack of accessibility for students with disabilities',
+      'Insufficient storage for students\' belongings',
+      'Allergens or irritants in classroom',
+      'Disruption of transportation / student dismissal'
+    ]
+  },
+  outdoor: {
+    safety: [
+      'None observed',
+      'Tripping hazards (cables/cords)',
+      'Slippery floors',
+      'No shades',
+      'Unsafe electrical outlets',
+      'Obstructed emergency exits',
+      'Damaged furniture',
+      'Debris fall',
+      'Smoke inhalation during fire incidents'
+    ],
+    equipment: [
+      'None observed',
+      'Malfunctioning swings',
+      'Inadequate seating',
+      'Poor corner guards',
+      'Unstable furniture',
+      'Gate lock issue',
+      'Water coolers malfunction',
+      'Fire alarm / emergency system malfunction',
+      'Power outage affecting safety systems'
+    ],
+    general: [
+      'None observed',
+      'Lack of adequate play resources',
+      'Communication breakdown',
+      'Distractions',
+      'Lack of accessibility for students with disabilities',
+      'Sharp edges',
+      'Allergens or irritants in the environment',
+      'Disruption of transportation / student dismissal'
+    ]
+  }
+};
+
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday'];
+const LEVELS = ['None','Low','Medium','High','Critical'];
+let currentType = 'classroom';
+
+// ── Build risk table ──────────────────────────────────────────
+function buildTable() {
+  const tbody = document.getElementById('riskTableBody');
+  tbody.innerHTML = '';
+  const risks = RISKS[currentType];
+  DAYS.forEach(day => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${day}</td>
+      <td class="risk-cell">
+        <select id="s_${day}_safety" onchange="updateProgress()">
+          ${risks.safety.map(r=>`<option value="${r}">${r}</option>`).join('')}
+        </select>
+      </td>
+      <td class="risk-cell">
+        <select id="l_${day}_safety" onchange="updateProgress();updateLevelBadge(this)">
+          ${LEVELS.map(l=>`<option value="${l}">${l}</option>`).join('')}
+        </select>
+      </td>
+      <td class="risk-cell">
+        <select id="s_${day}_equipment" onchange="updateProgress()">
+          ${risks.equipment.map(r=>`<option value="${r}">${r}</option>`).join('')}
+        </select>
+      </td>
+      <td class="risk-cell">
+        <select id="l_${day}_equipment" onchange="updateProgress();updateLevelBadge(this)">
+          ${LEVELS.map(l=>`<option value="${l}">${l}</option>`).join('')}
+        </select>
+      </td>
+      <td class="risk-cell">
+        <select id="s_${day}_general" onchange="updateProgress()">
+          ${risks.general.map(r=>`<option value="${r}">${r}</option>`).join('')}
+        </select>
+      </td>
+      <td class="risk-cell">
+        <select id="l_${day}_general" onchange="updateProgress();updateLevelBadge(this)">
+          ${LEVELS.map(l=>`<option value="${l}">${l}</option>`).join('')}
+        </select>
+      </td>
+      <td class="risk-cell">
+        <input type="text" id="c_${day}" placeholder="Comments..." oninput="updateProgress()">
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateLevelBadge(sel) {
+  // Could add dynamic badge colouring per row in future
+}
+
+function setType(type) {
+  currentType = type;
+  document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + type).classList.add('active');
+  document.getElementById('formTitle').textContent =
+    type === 'classroom' ? 'Classroom Risk Assessment' : 'Outdoor / Play Area Risk Assessment';
+  document.getElementById('metaDot').style.background =
+    type === 'classroom' ? '#1a56db' : '#16a34a';
+  document.getElementById('classroomOnlyField').style.display = type === 'classroom' ? '' : 'none';
+  document.getElementById('outdoorOnlyField').style.display = type === 'outdoor' ? '' : 'none';
+  buildTable();
+  updateProgress();
+}
+
+function updateProgress() {
+  // Count non-default selections across all days
+  let filled = 0;
+  let total = DAYS.length * 3; // 3 categories per day
+  DAYS.forEach(day => {
+    ['safety','equipment','general'].forEach(cat => {
+      const v = document.getElementById(`s_${day}_${cat}`)?.value;
+      if (v && v !== 'None observed') filled++;
+    });
+  });
+  const pct = Math.round((filled / total) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('answeredCount').textContent = `${filled} of ${total} risk categories assessed`;
+}
+
+async function handleSubmit() {
+  const errEl = document.getElementById('alertError');
+  errEl.style.display = 'none';
+
+  const conductedBy = document.getElementById('fConductedBy').value.trim();
+  const submitDate  = document.getElementById('fSubmitDate').value;
+
+  if (!conductedBy || !submitDate) {
+    errEl.textContent = 'Please fill in "Conducted By" and "Date of Submission".';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Saving…';
+
+  // Collect daily rows
+  const dailyRows = DAYS.map(day => ({
+    day,
+    safetyRisk:     document.getElementById(`s_${day}_safety`).value,
+    safetyLevel:    document.getElementById(`l_${day}_safety`).value,
+    equipmentRisk:  document.getElementById(`s_${day}_equipment`).value,
+    equipmentLevel: document.getElementById(`l_${day}_equipment`).value,
+    generalRisk:    document.getElementById(`s_${day}_general`).value,
+    generalLevel:   document.getElementById(`l_${day}_general`).value,
+    comments:       document.getElementById(`c_${day}`).value.trim()
+  }));
+
+  // Count risk levels
+  const levelCounts = { None:0, Low:0, Medium:0, High:0, Critical:0 };
+  dailyRows.forEach(r => {
+    levelCounts[r.safetyLevel]++;
+    levelCounts[r.equipmentLevel]++;
+    levelCounts[r.generalLevel]++;
+  });
+
+  const submission = {
+    type:          currentType,
+    classroom:     currentType === 'classroom' ? (document.getElementById('fClassroom').value.trim() || '') : '',
+    dateFrom:      currentType === 'classroom' ? document.getElementById('fDateFrom').value : document.getElementById('fDateFromO').value,
+    dateTo:        currentType === 'classroom' ? document.getElementById('fDateTo').value   : document.getElementById('fDateToO').value,
+    conductedBy,
+    submitDate,
+    dailyRows,
+    levelCounts,
+    approver: {
+      name:  document.getElementById('sigName').value.trim(),
+      title: document.getElementById('sigTitle').value.trim(),
+      date:  document.getElementById('sigDate').value
+    },
+    notes: document.getElementById('fNotes').value.trim(),
+    highRisk: levelCounts.High > 0 || levelCounts.Critical > 0,
+    submittedAt: window.__ra_ts ? window.__ra_ts() : new Date().toISOString()
+  };
+
+  try {
+    if (window.__ra_db && window.__ra_addDoc) {
+      await window.__ra_addDoc(window.__ra_collection(window.__ra_db, 'risk_assessments'), submission);
+    } else {
+      // localStorage fallback
+      const ex = JSON.parse(localStorage.getItem('ra_submissions') || '[]');
+      submission.submittedAt = new Date().toISOString();
+      submission.id = 'local_' + Date.now();
+      ex.push(submission);
+      localStorage.setItem('ra_submissions', JSON.stringify(ex));
+    }
+    document.getElementById('mainForm').style.display = 'none';
+    document.getElementById('successScreen').style.display = 'block';
+  } catch(e) {
+    errEl.textContent = 'Save failed: ' + e.message + '. Please try again.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Submit Assessment';
+  }
+}
+
+function resetForm() {
+  document.getElementById('mainForm').style.display = '';
+  document.getElementById('successScreen').style.display = 'none';
+  document.getElementById('fConductedBy').value = '';
+  document.getElementById('fNotes').value = '';
+  document.getElementById('sigName').value = '';
+  document.getElementById('sigTitle').value = '';
+  document.getElementById('sigDate').value = '';
+  document.getElementById('alertError').style.display = 'none';
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = false;
+  btn.textContent = 'Submit Assessment';
+  buildTable();
+  updateProgress();
+  document.getElementById('fSubmitDate').value = new Date().toISOString().split('T')[0];
+}
+
+// ── Init ──────────────────────────────────────────────────────
+setType('classroom');
+document.getElementById('fSubmitDate').value = new Date().toISOString().split('T')[0];
+document.getElementById('sigDate').value      = new Date().toISOString().split('T')[0];
+const today = new Date();
+const monday = new Date(today); monday.setDate(today.getDate() - today.getDay() + 1);
+const thursday = new Date(monday); thursday.setDate(monday.getDate() + 3);
+document.getElementById('fDateFrom').value  = monday.toISOString().split('T')[0];
+document.getElementById('fDateTo').value    = thursday.toISOString().split('T')[0];
+document.getElementById('fDateFromO').value = monday.toISOString().split('T')[0];
+document.getElementById('fDateToO').value   = thursday.toISOString().split('T')[0];
+</script>
+</body>
+</html>

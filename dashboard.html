@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Risk Assessment Dashboard · Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0f1a;--bg2:#111827;--bg3:#1a2235;--bg4:#1e293b;
+  --border:#1e2d45;--border2:#2d3f58;
+  --text:#e2e8f0;--text2:#7a90a8;--text3:#3d5068;
+  --blue:#3b82f6;--blue2:#1d4ed8;--blue-dim:#1e3a5f;
+  --green:#22c55e;--green-dim:#14532d;
+  --amber:#f59e0b;--amber-dim:#451a03;
+  --red:#ef4444;--red-dim:#450a0a;
+  --purple:#a855f7;
+  --radius:10px;--radius-lg:14px;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+
+/* ── LOGIN ── */
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.login-box{width:360px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2.25rem;}
+.login-logo{font-family:'Playfair Display',serif;font-size:20px;color:var(--text);margin-bottom:.25rem;}
+.login-sub{font-size:12px;color:var(--text2);margin-bottom:1.75rem;}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;}
+.field input{width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--radius);padding:9px 12px;font-size:13px;color:var(--text);font-family:'Inter',sans-serif;outline:none;margin-bottom:1rem;}
+.field input:focus{border-color:var(--blue);}
+.btn-login{width:100%;background:var(--blue);color:#fff;border:none;border-radius:var(--radius);padding:10px;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;}
+.login-err{font-size:12px;color:#f87171;margin-top:8px;display:none;}
+
+/* ── APP SHELL ── */
+.app{display:none;flex-direction:column;min-height:100vh;}
+
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 1.5rem;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.topbar-left{display:flex;align-items:center;gap:14px;}
+.topbar-logo{font-family:'Playfair Display',serif;font-size:16px;}
+.topbar-tag{font-size:11px;color:var(--text3);letter-spacing:.05em;text-transform:uppercase;border-left:1px solid var(--border);padding-left:14px;}
+.btn-logout{font-size:12px;color:var(--text2);background:none;border:1px solid var(--border);border-radius:6px;padding:5px 12px;cursor:pointer;font-family:'Inter',sans-serif;}
+.btn-logout:hover{color:var(--text);border-color:var(--border2);}
+
+/* ── NAV ── */
+.nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 1.5rem;display:flex;gap:2px;flex-wrap:wrap;}
+.nav-tab{padding:14px 16px 12px;font-size:13px;font-weight:500;color:var(--text2);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;margin-bottom:-1px;}
+.nav-tab:hover{color:var(--text);}
+.nav-tab.active{color:var(--text);border-bottom-color:var(--blue);}
+
+/* ── MAIN ── */
+.main{padding:1.5rem;max-width:1280px;margin:0 auto;}
+.section{display:none;} .section.active{display:block;}
+
+/* ── STAT CARDS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:1.5rem;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;}
+.stat-label{font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;}
+.stat-value{font-size:28px;font-weight:700;line-height:1;}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:4px;}
+.stat-trend{font-size:11px;font-weight:500;margin-top:4px;}
+
+/* ── CHART ROW ── */
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem;}
+.chart-row.three{grid-template-columns:1fr 1fr 1fr;}
+.chart-row.full{grid-template-columns:1fr;}
+@media(max-width:768px){.chart-row,.chart-row.three{grid-template-columns:1fr;}}
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.25rem;}
+.chart-card h3{font-size:12px;font-weight:600;color:var(--text);letter-spacing:.02em;margin-bottom:1rem;text-transform:uppercase;}
+.chart-card canvas{max-height:240px;}
+
+/* ── FILTER BAR ── */
+.filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:1.25rem;}
+.filter-bar label{font-size:12px;color:var(--text2);}
+.fsel{background:var(--bg2);border:1px solid var(--border);color:var(--text);font-size:12px;padding:6px 10px;border-radius:8px;font-family:'Inter',sans-serif;outline:none;}
+.fsel:focus{border-color:var(--blue);}
+.btn-action{padding:7px 16px;font-size:12px;font-weight:600;font-family:'Inter',sans-serif;border-radius:8px;border:none;cursor:pointer;transition:all .15s;}
+.btn-blue{background:var(--blue);color:#fff;}
+.btn-blue:hover{background:var(--blue2);}
+.btn-green{background:#166534;color:#4ade80;border:1px solid #14532d;}
+.btn-green:hover{background:#14532d;}
+
+/* ── TABLE ── */
+.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+thead{background:var(--bg3);}
+th{padding:10px 14px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;text-align:left;white-space:nowrap;}
+td{padding:10px 14px;border-top:1px solid var(--border);color:var(--text);white-space:nowrap;}
+tr:hover td{background:var(--bg3);}
+.flag-row td{border-left:3px solid var(--red);}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px;}
+.badge-red{background:#dc262622;color:#f87171;}
+.badge-amber{background:#d9770622;color:#fbbf24;}
+.badge-green{background:#16a34a22;color:#4ade80;}
+.badge-blue{background:#1d4ed822;color:#93c5fd;}
+.badge-none{background:var(--bg3);color:var(--text3);}
+
+/* ── ACTION BUTTONS ── */
+.btn-del{background:none;border:1px solid #dc262633;color:#f87171;font-size:11px;font-family:'Inter',sans-serif;padding:3px 9px;border-radius:6px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn-del:hover{background:#dc262622;border-color:#f87171;}
+.btn-pdf-sm{background:none;border:1px solid #a855f733;color:#c084fc;font-size:11px;font-family:'Inter',sans-serif;padding:3px 9px;border-radius:6px;cursor:pointer;transition:all .15s;margin-right:4px;white-space:nowrap;}
+.btn-pdf-sm:hover{background:#a855f722;border-color:#c084fc;}
+
+/* ── MODAL ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.75rem;max-width:360px;width:90%;text-align:center;}
+.modal-box h4{font-size:15px;margin-bottom:.5rem;}
+.modal-box p{font-size:13px;color:var(--text2);margin-bottom:1.5rem;}
+.modal-btns{display:flex;gap:8px;justify-content:center;}
+.modal-btns button{padding:8px 22px;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;cursor:pointer;border:1px solid var(--border);}
+.btn-confirm-del{background:var(--red);color:#fff;border-color:var(--red)!important;}
+.btn-cancel{background:var(--bg3);color:var(--text);}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:3rem 1rem;color:var(--text3);font-size:13px;}
+
+/* ── DETAIL VIEW ── */
+.detail-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;}
+.detail-card h4{font-size:12px;font-weight:600;text-transform:uppercase;color:var(--text2);letter-spacing:.07em;border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:.75rem;}
+.detail-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;gap:1rem;}
+.detail-row:not(:last-child){border-bottom:1px solid var(--border);}
+.detail-label{color:var(--text2);}
+.detail-val{font-weight:500;text-align:right;}
+
+/* ── RISK LEVEL CHIP ── */
+.lvl{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:.05em;}
+.lvl-None{background:var(--bg3);color:var(--text3);}
+.lvl-Low{background:#14532d;color:#4ade80;}
+.lvl-Medium{background:#451a03;color:#fbbf24;}
+.lvl-High{background:#450a0a;color:#f87171;}
+.lvl-Critical{background:#2e1065;color:#d8b4fe;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-page" id="loginPage">
+  <div class="login-box">
+    <div class="login-logo">Risk Assessment Dashboard</div>
+    <div class="login-sub">Pakistan Islamia HSS Sharjah · Admin Access</div>
+    <div class="field"><label>Username</label><input type="text" id="lu" placeholder="admin" autocomplete="username"></div>
+    <div class="field"><label>Password</label><input type="password" id="lp" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn-login" onclick="doLogin()">Sign In</button>
+    <div class="login-err" id="loginErr">Incorrect credentials.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-logo">Risk Assessment Dashboard</span>
+      <span class="topbar-tag">Pakistan Islamia HSS · Admin</span>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Sign out</button>
+  </div>
+  <div class="nav">
+    <button class="nav-tab active" data-tab="overview" onclick="showTab(this,'overview')">Overview</button>
+    <button class="nav-tab" data-tab="daily"    onclick="showTab(this,'daily')">Daily</button>
+    <button class="nav-tab" data-tab="weekly"   onclick="showTab(this,'weekly')">Weekly</button>
+    <button class="nav-tab" data-tab="monthly"  onclick="showTab(this,'monthly')">Monthly</button>
+    <button class="nav-tab" data-tab="records"  onclick="showTab(this,'records')">All Records</button>
+    <button class="nav-tab" data-tab="risks"    onclick="showTab(this,'risks')">Risk Analysis</button>
+    <button class="nav-tab" data-tab="flagged"  onclick="showTab(this,'flagged')">⚠ Flagged</button>
+  </div>
+
+  <div class="main">
+
+    <!-- OVERVIEW -->
+    <div class="section active" id="sec-overview">
+      <div class="filter-bar" style="justify-content:flex-end;">
+        <button class="btn-action btn-blue" onclick="downloadPDF('overview')">⬇ Download Report (PDF)</button>
+      </div>
+      <div class="stats-grid" id="overviewStats"></div>
+      <div class="chart-row">
+        <div class="chart-card"><h3>Submissions This Month (Daily)</h3><canvas id="chartOverviewLine"></canvas></div>
+        <div class="chart-card"><h3>Risk Level Distribution</h3><canvas id="chartOverviewPie"></canvas></div>
+      </div>
+      <div class="chart-row three">
+        <div class="chart-card"><h3>Classroom vs Outdoor</h3><canvas id="chartTypeSplit"></canvas></div>
+        <div class="chart-card"><h3>High/Critical Risk Days</h3><canvas id="chartHighRisk"></canvas></div>
+        <div class="chart-card"><h3>Top Safety Risks</h3><canvas id="chartTopRisks"></canvas></div>
+      </div>
+    </div>
+
+    <!-- DAILY -->
+    <div class="section" id="sec-daily">
+      <div class="filter-bar">
+        <label>Date:</label>
+        <input type="date" class="fsel" id="dailyDate">
+        <button class="btn-action btn-blue" onclick="loadDaily()">Load</button>
+        <button class="btn-action btn-green" onclick="downloadPDF('daily')">⬇ PDF</button>
+      </div>
+      <div class="stats-grid" id="dailyStats"></div>
+      <div class="chart-row">
+        <div class="chart-card"><h3>Risk Levels This Day</h3><canvas id="chartDailyLevels"></canvas></div>
+        <div class="chart-card"><h3>Risk Category Breakdown</h3><canvas id="chartDailyCats"></canvas></div>
+      </div>
+      <div class="table-wrap" id="dailyTable"></div>
+    </div>
+
+    <!-- WEEKLY -->
+    <div class="section" id="sec-weekly">
+      <div class="filter-bar">
+        <label>Week of:</label>
+        <input type="date" class="fsel" id="weeklyDate">
+        <button class="btn-action btn-blue" onclick="loadWeekly()">Load</button>
+        <button class="btn-action btn-green" onclick="downloadPDF('weekly')">⬇ PDF</button>
+      </div>
+      <div class="stats-grid" id="weeklyStats"></div>
+      <div class="chart-row">
+        <div class="chart-card" style="grid-column:1/-1"><h3>Daily Submissions This Week</h3><canvas id="chartWeeklyTrend"></canvas></div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card"><h3>Risk Levels</h3><canvas id="chartWeeklyLevels"></canvas></div>
+        <div class="chart-card"><h3>Assessment Types</h3><canvas id="chartWeeklyTypes"></canvas></div>
+      </div>
+      <div class="table-wrap" id="weeklyTable"></div>
+    </div>
+
+    <!-- MONTHLY -->
+    <div class="section" id="sec-monthly">
+      <div class="filter-bar">
+        <label>Month:</label>
+        <input type="month" class="fsel" id="monthlyMonth">
+        <button class="btn-action btn-blue" onclick="loadMonthly()">Load</button>
+        <button class="btn-action btn-green" onclick="downloadPDF('monthly')">⬇ PDF</button>
+      </div>
+      <div class="stats-grid" id="monthlyStats"></div>
+      <div class="chart-row">
+        <div class="chart-card" style="grid-column:1/-1"><h3>Weekly Trend This Month</h3><canvas id="chartMonthlyTrend"></canvas></div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card"><h3>Risk Level Distribution</h3><canvas id="chartMonthlyLevels"></canvas></div>
+        <div class="chart-card"><h3>Submissions by Type</h3><canvas id="chartMonthlyTypes"></canvas></div>
+      </div>
+      <div class="table-wrap" id="monthlyTable"></div>
+    </div>
+
+    <!-- ALL RECORDS -->
+    <div class="section" id="sec-records">
+      <div class="filter-bar">
+        <input type="text" class="fsel" id="recSearch" placeholder="Search by name, classroom, type…" oninput="renderRecords()" style="min-width:220px">
+        <select class="fsel" id="recType" onchange="renderRecords()">
+          <option value="">All types</option>
+          <option value="classroom">Classroom</option>
+          <option value="outdoor">Outdoor</option>
+        </select>
+        <select class="fsel" id="recRisk" onchange="renderRecords()">
+          <option value="">All risk levels</option>
+          <option value="high">High / Critical only</option>
+        </select>
+        <button class="btn-action btn-green" onclick="downloadPDF('records')">⬇ Export PDF</button>
+      </div>
+      <div class="table-wrap" id="recordsTable"></div>
+    </div>
+
+    <!-- RISK ANALYSIS -->
+    <div class="section" id="sec-risks">
+      <div class="filter-bar" style="justify-content:flex-end;">
+        <button class="btn-action btn-green" onclick="downloadPDF('risks')">⬇ Risk Analysis PDF</button>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card"><h3>Top Safety Risks (All Time)</h3><canvas id="chartRiskSafety"></canvas></div>
+        <div class="chart-card"><h3>Top Equipment Risks (All Time)</h3><canvas id="chartRiskEquip"></canvas></div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-card"><h3>Top General Risks (All Time)</h3><canvas id="chartRiskGeneral"></canvas></div>
+        <div class="chart-card"><h3>Risk Level Frequency by Category</h3><canvas id="chartRiskByDay"></canvas></div>
+      </div>
+    </div>
+
+    <!-- FLAGGED -->
+    <div class="section" id="sec-flagged">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:1rem;">Assessments with <strong>High</strong> or <strong>Critical</strong> risk levels — require immediate follow-up.</p>
+      <div class="filter-bar" style="justify-content:flex-end;">
+        <button class="btn-action btn-green" onclick="downloadPDF('flagged')">⬇ Flagged Report PDF</button>
+      </div>
+      <div class="table-wrap" id="flaggedTable"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-bg" id="delModal">
+  <div class="modal-box">
+    <h4>Delete Record?</h4>
+    <p id="delModalMsg">This cannot be undone.</p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-confirm-del" id="delConfirmBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, getDocs, deleteDoc, doc, query, orderBy }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyB7-eMJDxpb9rYDSYA08vO--oTqJYWqBKs",
+    authDomain: "wellbeing-portal.firebaseapp.com",
+    projectId: "wellbeing-portal",
+    storageBucket: "wellbeing-portal.firebasestorage.app",
+    messagingSenderId: "1001968246301",
+    appId: "1:1001968246301:web:6957a00ef47293db2970f4"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+  window.__ra_db        = db;
+  window.__ra_getDocs   = getDocs;
+  window.__ra_deleteDoc = deleteDoc;
+  window.__ra_doc       = doc;
+  window.__ra_query     = query;
+  window.__ra_collection= collection;
+  window.__ra_orderBy   = orderBy;
+</script>
+
+<script>
+// ── AUTH ──────────────────────────────────────────────────────
+const ADMIN_USER='admin', ADMIN_PASS='risk2024';
+function doLogin(){
+  if(document.getElementById('lu').value.trim()===ADMIN_USER && document.getElementById('lp').value===ADMIN_PASS){
+    sessionStorage.setItem('ra_auth','1');
+    document.getElementById('loginPage').style.display='none';
+    document.getElementById('app').style.cssText='display:flex;flex-direction:column;';
+    initApp();
+  } else { document.getElementById('loginErr').style.display='block'; }
+}
+function doLogout(){ sessionStorage.removeItem('ra_auth'); location.reload(); }
+if(sessionStorage.getItem('ra_auth')==='1'){
+  document.getElementById('loginPage').style.display='none';
+  document.getElementById('app').style.cssText='display:flex;flex-direction:column;';
+}
+
+// ── NAV ───────────────────────────────────────────────────────
+function showTab(el,name){
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('sec-'+name).classList.add('active');
+}
+
+// ── GLOBAL DATA ───────────────────────────────────────────────
+let allData=[];
+let chartReg={};
+
+// ── LOAD DATA ─────────────────────────────────────────────────
+async function loadData(){
+  if(window.__ra_db && window.__ra_getDocs){
+    try{
+      const q=window.__ra_query(window.__ra_collection(window.__ra_db,'risk_assessments'),window.__ra_orderBy('submitDate','desc'));
+      const snap=await window.__ra_getDocs(q);
+      allData=snap.docs.map(d=>({id:d.id,...d.data()}));
+      return;
+    }catch(e){console.warn('Firebase fallback',e);}
+  }
+  allData=JSON.parse(localStorage.getItem('ra_submissions')||'[]');
+  if(!allData.length) injectDemo();
+}
+
+function injectDemo(){
+  const people=['Ms. Aisha Tariq','Mr. Omar Farooq','Ms. Sara Malik','Mr. Bilal Hassan','Ms. Fatima Noor'];
+  const classes=['Room 1A','Room 2B','Room 3C','Outdoor Yard','Room 4D'];
+  const safetyR=['None observed','Tripping hazards (cables/cords)','Slippery floors','Damaged furniture','Unsafe electrical outlets'];
+  const equipR =['None observed','Malfunctioning projector','Inadequate seating','Unstable furniture','Fire alarm malfunction'];
+  const genR   =['None observed','Communication breakdown','Classroom distractions','Allergens in classroom','Lack of teaching materials'];
+  const levels =['None','Low','Medium','High','Critical'];
+  const days   =['Monday','Tuesday','Wednesday','Thursday'];
+  allData=[];
+  const today=new Date();
+  for(let i=0;i<80;i++){
+    const d=new Date(today); d.setDate(today.getDate()-Math.floor(Math.random()*60));
+    const sd=d.toISOString().split('T')[0];
+    const type=Math.random()>.5?'classroom':'outdoor';
+    const rows=days.map(day=>({
+      day, safetyRisk:safetyR[Math.floor(Math.random()*safetyR.length)],
+      safetyLevel:levels[Math.floor(Math.random()*levels.length)],
+      equipmentRisk:equipR[Math.floor(Math.random()*equipR.length)],
+      equipmentLevel:levels[Math.floor(Math.random()*levels.length)],
+      generalRisk:genR[Math.floor(Math.random()*genR.length)],
+      generalLevel:levels[Math.floor(Math.random()*levels.length)],
+      comments:''
+    }));
+    const lc={None:0,Low:0,Medium:0,High:0,Critical:0};
+    rows.forEach(r=>{lc[r.safetyLevel]++;lc[r.equipmentLevel]++;lc[r.generalLevel]++;});
+    const hr=lc.High>0||lc.Critical>0;
+    allData.push({id:'demo_'+i,type,classroom:type==='classroom'?classes[i%5]:'',
+      conductedBy:people[i%people.length],submitDate:sd,dateFrom:sd,dateTo:sd,
+      dailyRows:rows,levelCounts:lc,highRisk:hr,notes:'',approver:{name:'',title:'',date:''},
+      submittedAt:d.toISOString()});
+  }
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+const mk=(id,cfg)=>{if(chartReg[id]){chartReg[id].destroy();}const el=document.getElementById(id);if(!el)return;chartReg[id]=new Chart(el,cfg);};
+const cDef={plugins:{legend:{labels:{color:'#7a90a8',font:{family:'Inter',size:11}}}},scales:{x:{ticks:{color:'#3d5068',font:{family:'Inter',size:11}},grid:{color:'#1e2d45'}},y:{ticks:{color:'#3d5068',font:{family:'Inter',size:11}},grid:{color:'#1e2d45'}}}};
+const avg=a=>a.length?a.reduce((x,b)=>x+b,0)/a.length:0;
+const levelColor=l=>l==='Critical'?'#d8b4fe':l==='High'?'#f87171':l==='Medium'?'#fbbf24':l==='Low'?'#4ade80':'#3d5068';
+function riskBadge(highRisk){return highRisk?'<span class="badge badge-red">⚠ High/Critical</span>':'<span class="badge badge-green">✓ Low</span>';}
+function typeLabel(t){return t==='classroom'?'Classroom':'Outdoor';}
+function typeColor(t){return t==='classroom'?'#3b82f6':'#22c55e';}
+function countLevels(subs){
+  const lc={None:0,Low:0,Medium:0,High:0,Critical:0};
+  subs.forEach(s=>{if(s.levelCounts)Object.entries(s.levelCounts).forEach(([k,v])=>{lc[k]=(lc[k]||0)+v;});});
+  return lc;
+}
+function buildStatsCards(id,stats){
+  document.getElementById(id).innerHTML=stats.map(s=>`
+    <div class="stat-card">
+      <div class="stat-label">${s.label}</div>
+      <div class="stat-value" style="${s.color?'color:'+s.color:''}">${s.value}</div>
+      <div class="stat-sub">${s.sub||''}</div>
+    </div>`).join('');
+}
+function getWeekRange(dateStr){
+  const d=new Date(dateStr),day=d.getDay();
+  const mon=new Date(d); mon.setDate(d.getDate()-day+(day===0?-6:1));
+  const dates=[];
+  for(let i=0;i<7;i++){const dd=new Date(mon);dd.setDate(mon.getDate()+i);dates.push(dd.toISOString().split('T')[0]);}
+  return dates;
+}
+
+// ── OVERVIEW ─────────────────────────────────────────────────
+function renderOverview(){
+  const total=allData.length;
+  const flagged=allData.filter(s=>s.highRisk).length;
+  const today=new Date().toISOString().split('T')[0];
+  const todayCnt=allData.filter(s=>s.submitDate===today).length;
+  const thisMonth=today.slice(0,7);
+  const monthCnt=allData.filter(s=>s.submitDate&&s.submitDate.startsWith(thisMonth)).length;
+
+  buildStatsCards('overviewStats',[
+    {label:'Total Records',value:total,sub:'All time'},
+    {label:'This Month',value:monthCnt,sub:thisMonth},
+    {label:"Today's Submissions",value:todayCnt,sub:today},
+    {label:'High/Critical Risk',value:flagged,sub:'Require attention',color:flagged?'#f87171':'#4ade80'},
+  ]);
+
+  // Line chart - daily count this month
+  const days30=[],counts30=[];
+  for(let i=29;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const k=d.toISOString().split('T')[0];
+    days30.push(k.slice(5));
+    counts30.push(allData.filter(s=>s.submitDate===k).length);
+  }
+  mk('chartOverviewLine',{type:'line',data:{labels:days30,datasets:[{label:'Submissions',data:counts30,borderColor:'#3b82f6',backgroundColor:'#3b82f620',fill:true,tension:.4,pointRadius:3}]},options:{...cDef,plugins:{...cDef.plugins,legend:{display:false}}}});
+
+  // Pie - risk levels
+  const lc=countLevels(allData);
+  mk('chartOverviewPie',{type:'doughnut',data:{labels:Object.keys(lc),datasets:[{data:Object.values(lc),backgroundColor:['#3d5068','#14532d','#451a03','#450a0a','#2e1065'],borderColor:'#111827',borderWidth:2}]},options:{plugins:{legend:{labels:{color:'#7a90a8',font:{family:'Inter',size:11}}}}}});
+
+  // Type split
+  mk('chartTypeSplit',{type:'doughnut',data:{labels:['Classroom','Outdoor'],datasets:[{data:[allData.filter(s=>s.type==='classroom').length,allData.filter(s=>s.type==='outdoor').length],backgroundColor:['#3b82f6','#22c55e'],borderColor:'#111827',borderWidth:2}]},options:{plugins:{legend:{labels:{color:'#7a90a8',font:{family:'Inter',size:11}}}}}});
+
+  // High risk per day (last 14)
+  const hDays=[],hCounts=[];
+  for(let i=13;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);const k=d.toISOString().split('T')[0];
+    hDays.push(k.slice(5));
+    hCounts.push(allData.filter(s=>s.submitDate===k&&s.highRisk).length);
+  }
+  mk('chartHighRisk',{type:'bar',data:{labels:hDays,datasets:[{label:'High Risk',data:hCounts,backgroundColor:'#ef444477',borderColor:'#ef4444',borderWidth:1,borderRadius:4}]},options:{...cDef,plugins:{...cDef.plugins,legend:{display:false}}}});
+
+  // Top safety risks
+  const riskFreq={};
+  allData.forEach(s=>{if(s.dailyRows)s.dailyRows.forEach(r=>{if(r.safetyRisk&&r.safetyRisk!=='None observed'){riskFreq[r.safetyRisk]=(riskFreq[r.safetyRisk]||0)+1;}});});
+  const topRisks=Object.entries(riskFreq).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  mk('chartTopRisks',{type:'bar',data:{labels:topRisks.map(r=>r[0].length>20?r[0].slice(0,20)+'…':r[0]),datasets:[{label:'Occurrences',data:topRisks.map(r=>r[1]),backgroundColor:'#f59e0b77',borderColor:'#f59e0b',borderWidth:1,borderRadius:4}]},options:{...cDef,plugins:{...cDef.plugins,legend:{display:false}},indexAxis:'y'}});
+}
+
+// ── DAILY ────────────────────────────────────────────────────
+function loadDaily(){
+  const date=document.getElementById('dailyDate').value; if(!date)return;
+  const subs=allData.filter(s=>s.submitDate===date);
+  buildStatsCards('dailyStats',[
+    {label:'Submissions',value:subs.length},
+    {label:'Flagged',value:subs.filter(s=>s.highRisk).length,color:'#f87171'},
+    {label:'Classroom',value:subs.filter(s=>s.type==='classroom').length},
+    {label:'Outdoor',value:subs.filter(s=>s.type==='outdoor').length},
+  ]);
+  const lc=countLevels(subs);
+  mk('chartDailyLevels',{type:'bar',data:{labels:Object.keys(lc),datasets:[{label:'Count',data:Object.values(lc),backgroundColor:Object.keys(lc).map(levelColor),borderRadius:5}]},options:{...cDef,plugins:{...cDef.plugins,legend:{display:false}}}});
+  // Category breakdown — safety vs equipment vs general
+  const sLevels={None:0,Low:0,Medium:0,High:0,Critical:0};
+  const eLevels={None:0,Low:0,Medium:0,High:0,Critical:0};
+  const gLevels={None:0,Low:0,Medium:0,High:0,Critical:0};
+  subs.forEach(s=>{if(s.dailyRows)s.dailyRows.forEach(r=>{sLevels[r.safetyLevel]=(sLevels[r.safetyLevel]||0)+1;eLevels[r.equipmentLevel]=(eLevels[r.equipmentLevel]||0)+1;gLevels[r.generalLevel]=(gLevels[r.generalLevel]||0)+1;});});
+  mk('chartDailyCats',{type:'bar',data:{labels:['None','Low','Medium','High','Critical'],datasets:[
+    {label:'Safety',data:Object.values(sLevels),backgroundColor:'#3b82f677',borderColor:'#3b82f6',borderWidth:1,borderRadius:3},
+    {label:'Equipment',data:Object.values(eLevels),backgroundColor:'#f59e0b77',borderColor:'#f59e0b',borderWidth:1,borderRadius:3},
+    {label:'General',data:Object.values(gLevels),backgroundColor:'#a855f777',borderColor:'#a855f7',borderWidth:1,borderRadius:3},
+  ]},options:{...cDef}});
+  renderTable('dailyTable',subs);
+}
+
+// ── WEEKLY ───────────────────────────────────────────────────
+function loadWeekly(){
+  const dateVal=document.getElementById('weeklyDate').value; if(!dateVal)return;
+  const wDates=getWeekRange(dateVal);
+  const subs=allData.filter(s=>wDates.includes(s.submitDate));
+  buildStatsCards('weeklyStats',[
+    {label:'Submissions',value:subs.length,sub:`${wDates[0]} – ${wDates[6]}`},
+    {label:'Flagged',value:subs.filter(s=>s.highRisk).length,color:'#f87171'},
+    {label:'Classroom',value:subs.filter(s=>s.type==='classroom').length},
+    {label:'Outdoor',value:subs.filter(s=>s.type==='outdoor').length},
+  ]);
+  const dayLabels=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const dayCounts=wDates.map(d=>subs.filter(s=>s.submitDate===d).length);
+  mk('chartWeeklyTrend',{type:'line',data:{labels:dayLabels,datasets:[{label:'Submissions',data:dayCounts,borderColor:'#3b82f6',backgroundColor:'#3b82f620',fill:true,tension:.4,pointRadius:5}]},options:{...cDef,plugins:{...cDef.plugins,legend:{display:false}}}});
+  const lc=countLevels(subs);
+  mk('chartWeeklyLevels',{type:'doughnut',data:{labels:Object.keys(lc),datasets:[{data:Object.values(lc),backgroundColor:Object.keys(lc).map(levelColor),borderColor:'#111827',borderWidth:2}]},options:{plugins:{legend:{labels:{color:'#7a90a8',font:{family:'Inter',size:11}}}}}});
+  mk('chartWeeklyTypes',{type:'doughnut',data:{labels:['Classroom','Outdoor'],datasets:[{data:[subs.filter(s=>s.type==='classroom').length,subs.filter(s=>s.type==='outdoor').length],backgroundColor:['#3b82f6','#22c55e'],borderColor:'#111827',borderWidth:2}]},options:{plugins:{legend:{labels:{color:'#7a90a8',font:{family:'Inter',size:11}}}}}});
+  renderTable('weeklyTable',subs);
+}
+
+// ── MONTHLY ──────────────────────────────────────────────────
+function loadMonthly(){
+  const mv=document.getElementById('monthlyMonth').value; if(!mv)return;
+  const [yr,mo]=mv.split('-').map(Number);
+  const subs=allData.filter(s=>{if(!s.submitDate)return false;const[sy,sm]=s.submitDate.split('-').map(Number);return sy===yr&&sm===mo;});
+  buildStatsCards('monthlyStats',[
+    {label:'Submissions',value:subs.length,sub:mv},
+    {label:'Flagged',value:subs.filter(s=>s.highRisk).length,color:'#f87171'},
+    {label:'Classroom',value:subs.filter(s=>s.type==='classroom').length},
+    {label:'Outdoor',value:subs.filter(s=>s.type==='outdoor').length},
+  ]);
+  // Weekly buckets
+  const wks=['Wk 1','Wk 2','Wk 3','Wk 4','Wk 5'];
+  const wCounts=wks.map((_,wi)=>{
+    const sd=wi*7+1, ed=Math.min(sd+6,31);
+    return subs.filter(s=>{const day=parseInt(s.submitDate.split('-')[2]);return day>=sd&&day<=ed;}).length;
+  });
+  mk('chartMonthlyTrend',{type:'line',data:{labels:wks,datasets:[{label:'Submissions',data:wCounts,borderColor:'#a855f7',backgroundColor:'#a855f720',fill:true,tension:.4,pointRadius:5}]},options:{...cDef,plugins:{...cDef.plugins,legend:{display:false}}}});
+  const lc=countLevels(subs);
+  mk('chartMonthlyLevels',{type:'doughnut',data:{labels:Object.keys(lc),datasets:[{data:Object.values(lc),backgroundColor:Object.keys(lc).map(levelColor),borderColor:'#111827',borderWidth:2}]},options:{plugins:{legend:{labels:{color:'#7a90a8',font:{family:'Inter',size:11}}}}}});
+  mk('chartMonthlyTypes',{type:'doughnut',data:{labels:['Classroom','Outdoor'],datasets:[{data:[subs.filter(s=>s.type==='classroom').length,subs.filter(s=>s.type==='outdoor').length],backgroundColor:['#3b82f6','#22c55e'],borderColor:'#111827',borderWidth:2}]},options:{plugins:{legend:{labels:{color:'#7a90a8',font:{family:'Inter',size:11}}}}}});
+  renderTable('monthlyTable',subs);
+}
+
+// ── ALL RECORDS ───────────────────────────────────────────────
+function renderRecords(){
+  const search=document.getElementById('recSearch').value.toLowerCase();
+  const type=document.getElementById('recType').value;
+  const riskF=document.getElementById('recRisk').value;
+  let subs=[...allData];
+  if(search)subs=subs.filter(s=>(s.conductedBy||'').toLowerCase().includes(search)||(s.classroom||'').toLowerCase().includes(search)||(s.type||'').toLowerCase().includes(search));
+  if(type)subs=subs.filter(s=>s.type===type);
+  if(riskF==='high')subs=subs.filter(s=>s.highRisk);
+  renderTable('recordsTable',subs,true);
+}
+
+// ── RISK ANALYSIS ─────────────────────────────────────────────
+function renderRisks(){
+  const freq={safety:{},equipment:{},general:{}};
+  allData.forEach(s=>{if(s.dailyRows)s.dailyRows.forEach(r=>{
+    if(r.safetyRisk&&r.safetyRisk!=='None observed')freq.safety[r.safetyRisk]=(freq.safety[r.safetyRisk]||0)+1;
+    if(r.equipmentRisk&&r.equipmentRisk!=='None observed')freq.equipment[r.equipmentRisk]=(freq.equipment[r.equipmentRisk]||0)+1;
+    if(r.generalRisk&&r.generalRisk!=='None observed')freq.general[r.generalRisk]=(freq.general[r.generalRisk]||0)+1;
+  });});
+  ['safety','equipment','general'].forEach((cat,ci)=>{
+    const top=Object.entries(freq[cat]).sort((a,b)=>b[1]-a[1]).slice(0,7);
+    const colors=['#3b82f677','#f59e0b77','#a855f777'];
+    const bColors=['#3b82f6','#f59e0b','#a855f7'];
+    mk('chartRisk'+cat.charAt(0).toUpperCase()+cat.slice(1),{type:'bar',data:{
+      labels:top.map(r=>r[0].length>24?r[0].slice(0,24)+'…':r[0]),
+      datasets:[{label:'Occurrences',data:top.map(r=>r[1]),backgroundColor:colors[ci],borderColor:bColors[ci],borderWidth:1,borderRadius:4}]
+    },options:{...cDef,plugins:{...cDef.plugins,legend:{display:false}},indexAxis:'y'}});
+  });
+  // Risk level by day of week
+  const dayFreq={'Monday':{High:0,Critical:0},'Tuesday':{High:0,Critical:0},'Wednesday':{High:0,Critical:0},'Thursday':{High:0,Critical:0}};
+  allData.forEach(s=>{if(s.dailyRows)s.dailyRows.forEach(r=>{
+    if(dayFreq[r.day]){
+      ['safetyLevel','equipmentLevel','generalLevel'].forEach(k=>{if(r[k]==='High')dayFreq[r.day].High++;if(r[k]==='Critical')dayFreq[r.day].Critical++;});
+    }
+  });});
+  mk('chartRiskByDay',{type:'bar',data:{labels:Object.keys(dayFreq),datasets:[
+    {label:'High',data:Object.values(dayFreq).map(v=>v.High),backgroundColor:'#ef444477',borderColor:'#ef4444',borderWidth:1,borderRadius:4},
+    {label:'Critical',data:Object.values(dayFreq).map(v=>v.Critical),backgroundColor:'#d8b4fe77',borderColor:'#d8b4fe',borderWidth:1,borderRadius:4},
+  ]},options:{...cDef}});
+}
+
+// ── FLAGGED ──────────────────────────────────────────────────
+function renderFlagged(){
+  const subs=allData.filter(s=>s.highRisk).sort((a,b)=>(b.submitDate||'').localeCompare(a.submitDate||''));
+  if(!subs.length){document.getElementById('flaggedTable').innerHTML='<div class="empty">No high/critical risk records. 🎉</div>';return;}
+  renderTable('flaggedTable',subs);
+}
+
+// ── GENERIC TABLE ─────────────────────────────────────────────
+function renderTable(id,subs,showAll=false){
+  const el=document.getElementById(id);
+  if(!subs.length){el.innerHTML='<div class="empty">No records found.</div>';return;}
+  el.innerHTML=`<table>
+    <thead><tr>
+      <th>Date</th><th>Type</th><th>Classroom</th><th>Conducted By</th>
+      <th>High Risks</th><th>Critical</th><th>Status</th><th>Actions</th>
+    </tr></thead>
+    <tbody>${subs.map(s=>{
+      const lc=s.levelCounts||{};
+      return`<tr class="${s.highRisk?'flag-row':''}">
+        <td>${s.submitDate||'—'}</td>
+        <td><span class="badge" style="background:${typeColor(s.type)}22;color:${typeColor(s.type)}">${typeLabel(s.type)}</span></td>
+        <td>${s.classroom||'—'}</td>
+        <td>${s.conductedBy||'—'}</td>
+        <td style="color:#f87171;font-weight:600">${lc.High||0}</td>
+        <td style="color:#d8b4fe;font-weight:600">${lc.Critical||0}</td>
+        <td>${riskBadge(s.highRisk)}</td>
+        <td>
+          ${s.id?`<button class="btn-pdf-sm" onclick="downloadSinglePDF('${s.id}')">PDF</button>
+          <button class="btn-del" onclick="confirmDel('${s.id}','${(s.conductedBy||'').replace(/'/g,"\\'")}')">✕ Delete</button>`:'—'}
+        </td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+// ── DELETE ────────────────────────────────────────────────────
+function confirmDel(id,name){
+  document.getElementById('delModalMsg').textContent=`Delete record by "${name}"? This cannot be undone.`;
+  document.getElementById('delModal').classList.add('open');
+  document.getElementById('delConfirmBtn').onclick=()=>execDelete(id);
+}
+function closeModal(){document.getElementById('delModal').classList.remove('open');}
+async function execDelete(id){
+  closeModal();
+  try{
+    if(window.__ra_db&&window.__ra_deleteDoc&&window.__ra_doc)
+      await window.__ra_deleteDoc(window.__ra_doc(window.__ra_db,'risk_assessments',id));
+    allData=allData.filter(s=>s.id!==id);
+    renderOverview(); renderRecords(); renderFlagged(); renderRisks();
+    loadDaily(); loadWeekly(); loadMonthly();
+  }catch(e){alert('Delete failed: '+e.message);}
+}
+
+// ── PDF ───────────────────────────────────────────────────────
+function pdfHeader(doc,title,sub){
+  const pw=210,m=14;
+  doc.setFillColor(26,86,219);doc.rect(0,0,pw,24,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(13);doc.setFont('helvetica','bold');
+  doc.text('Risk Assessment Report — '+title,m,10);
+  doc.setFontSize(9);doc.setFont('helvetica','normal');
+  doc.text('Pakistan Islamia Higher Secondary School · Sharjah',m,18);
+  const now=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  doc.text('Generated: '+now,pw-m,18,{align:'right'});
+  if(sub){doc.setTextColor(180,200,255);doc.setFontSize(9);doc.text(sub,m,18);}
+  return 30;
+}
+function pdfFooter(doc){
+  const n=doc.getNumberOfPages(),pw=210;
+  for(let i=1;i<=n;i++){doc.setPage(i);doc.setFontSize(7.5);doc.setTextColor(150);doc.text(`Page ${i} of ${n}  ·  Confidential  ·  Pakistan Islamia HSS Sharjah`,pw/2,292,{align:'center'});}
+}
+function pdfStatBoxes(doc,y,stats){
+  const pw=210,m=14,bw=(pw-m*2-9)/4;
+  stats.forEach((st,i)=>{
+    const bx=m+i*(bw+3);doc.setFillColor(20,30,50);doc.roundedRect(bx,y,bw,16,2,2,'F');
+    doc.setTextColor(100,140,180);doc.setFontSize(7);doc.text(st.label.toUpperCase(),bx+3,y+5);
+    doc.setTextColor(220,230,245);doc.setFontSize(11);doc.setFont('helvetica','bold');
+    doc.text(String(st.value),bx+3,y+13);doc.setFont('helvetica','normal');
+  });
+  return y+24;
+}
+function subsToTableRows(subs){
+  return subs.map(s=>{
+    const lc=s.levelCounts||{};
+    return[s.submitDate||'—',s.type==='classroom'?'Classroom':'Outdoor',s.classroom||'—',s.conductedBy||'—',String(lc.High||0),String(lc.Critical||0),s.highRisk?'⚠ High':'✓ Low'];
+  });
+}
+
+function downloadPDF(section){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const m=14;let y=0;
+  let subs=[],title='',sub='';
+
+  if(section==='overview'){subs=allData;title='Full Overview';}
+  else if(section==='daily'){
+    const d=document.getElementById('dailyDate').value;
+    subs=allData.filter(s=>s.submitDate===d);title='Daily Report';sub=d;
+  }else if(section==='weekly'){
+    const dv=document.getElementById('weeklyDate').value;
+    const wd=getWeekRange(dv);subs=allData.filter(s=>wd.includes(s.submitDate));
+    title='Weekly Report';sub=wd[0]+' – '+wd[6];
+  }else if(section==='monthly'){
+    const mv=document.getElementById('monthlyMonth').value;
+    const[yr,mo]=mv.split('-').map(Number);
+    subs=allData.filter(s=>{if(!s.submitDate)return false;const[sy,sm]=s.submitDate.split('-').map(Number);return sy===yr&&sm===mo;});
+    title='Monthly Report';sub=mv;
+  }else if(section==='records'){
+    const search=document.getElementById('recSearch').value.toLowerCase();
+    const type=document.getElementById('recType').value;
+    subs=[...allData];
+    if(search)subs=subs.filter(s=>(s.conductedBy||'').toLowerCase().includes(search)||(s.classroom||'').toLowerCase().includes(search));
+    if(type)subs=subs.filter(s=>s.type===type);
+    title='All Records Export';
+  }else if(section==='risks'){subs=allData;title='Risk Analysis';}
+  else if(section==='flagged'){subs=allData.filter(s=>s.highRisk);title='Flagged Records';}
+
+  y=pdfHeader(doc,title,sub);
+  const lc=countLevels(subs);
+  y=pdfStatBoxes(doc,y,[
+    {label:'Total Records',value:subs.length},
+    {label:'High Risk',value:subs.filter(s=>s.highRisk).length},
+    {label:'Classroom',value:subs.filter(s=>s.type==='classroom').length},
+    {label:'Outdoor',value:subs.filter(s=>s.type==='outdoor').length},
+  ]);
+  // Risk levels summary
+  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(200,215,235);
+  doc.text('Risk Level Summary',m,y);y+=3;
+  doc.autoTable({startY:y,head:[['Level','Count','% of Total']],body:Object.entries(lc).map(([k,v])=>[k,v,subs.length?((v/(subs.length*12))*100).toFixed(1)+'%':'0%']),styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[26,86,219],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[18,24,38]},bodyStyles:{fillColor:[17,24,37],textColor:[200,215,235]},margin:{left:m,right:m},tableWidth:90});
+  y=doc.lastAutoTable.finalY+8;
+  // Records table
+  if(subs.length&&subs.length<=300){
+    if(y>220){doc.addPage();y=20;}
+    doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(200,215,235);
+    doc.text('Submission Records',m,y);y+=3;
+    doc.autoTable({startY:y,head:[['Date','Type','Classroom','Conducted By','High','Critical','Status']],body:subsToTableRows(subs),styles:{fontSize:8,cellPadding:2.5},headStyles:{fillColor:[20,30,50],textColor:[200,220,255],fontStyle:'bold'},alternateRowStyles:{fillColor:[18,24,38]},bodyStyles:{fillColor:[17,24,37],textColor:[200,215,235]},margin:{left:m,right:m},
+    didParseCell:(d)=>{if(d.column.index===6&&d.section==='body'){d.cell.styles.textColor=d.cell.raw.includes('⚠')?[248,113,113]:[74,222,128];}}});
+  }
+  // Risk analysis section
+  if(section==='overview'||section==='risks'){
+    doc.addPage();y=20;
+    doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(200,215,235);
+    doc.text('Top Identified Risks',m,y);y+=5;
+    const freq={};
+    allData.forEach(s=>{if(s.dailyRows)s.dailyRows.forEach(r=>{
+      ['safetyRisk','equipmentRisk','generalRisk'].forEach(k=>{if(r[k]&&r[k]!=='None observed')freq[r[k]]=(freq[r[k]]||0)+1;});
+    });});
+    const topRisks=Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,15);
+    doc.autoTable({startY:y,head:[['Risk Identified','Occurrences']],body:topRisks.map(([k,v])=>[k,v]),styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[217,119,6],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[18,24,38]},bodyStyles:{fillColor:[17,24,37],textColor:[200,215,235]},margin:{left:m,right:m},tableWidth:130});
+  }
+  pdfFooter(doc);
+  doc.save(`risk-assessment-${section}-${new Date().toISOString().split('T')[0]}.pdf`);
+}
+
+function downloadSinglePDF(id){
+  const s=allData.find(x=>x.id===id); if(!s)return;
+  const {jsPDF}=window.jspdf;
+  const pdoc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const m=14;let y=0;
+  const col=s.type==='classroom'?[26,86,219]:[22,163,74];
+  pdoc.setFillColor(...col);pdoc.rect(0,0,210,24,'F');
+  pdoc.setTextColor(255,255,255);pdoc.setFontSize(12);pdoc.setFont('helvetica','bold');
+  pdoc.text((s.type==='classroom'?'Classroom':'Outdoor/Play Area')+' Risk Assessment',m,10);
+  pdoc.setFontSize(9);pdoc.setFont('helvetica','normal');
+  pdoc.text(`${s.classroom||''}  ·  Conducted by: ${s.conductedBy||'—'}  ·  Date: ${s.submitDate||'—'}`,m,18);
+  const gd=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  pdoc.text('Generated: '+gd,210-m,18,{align:'right'});
+  y=30;
+  // Summary
+  pdoc.setFillColor(18,25,40);pdoc.roundedRect(m,y,210-m*2,16,3,3,'F');
+  pdoc.setFontSize(9);pdoc.setTextColor(180,200,230);pdoc.setFont('helvetica','normal');
+  const lc=s.levelCounts||{};
+  pdoc.text(`High: ${lc.High||0}  Critical: ${lc.Critical||0}  Medium: ${lc.Medium||0}  Low: ${lc.Low||0}  Status: ${s.highRisk?'⚠ Requires Attention':'✓ Within Normal Range'}`,m+4,y+10);
+  y+=24;
+  // Daily rows
+  if(s.dailyRows&&s.dailyRows.length){
+    pdoc.setFontSize(10);pdoc.setFont('helvetica','bold');pdoc.setTextColor(200,215,235);
+    pdoc.text('Daily Risk Assessment Details',m,y);y+=3;
+    pdoc.autoTable({startY:y,head:[['Day','Safety Risk','S.Level','Equipment Risk','E.Level','General Risk','G.Level','Comments']],
+      body:s.dailyRows.map(r=>[r.day,r.safetyRisk,r.safetyLevel,r.equipmentRisk,r.equipmentLevel,r.generalRisk,r.generalLevel,r.comments||'']),
+      styles:{fontSize:7.5,cellPadding:2.5},headStyles:{fillColor:col,textColor:255,fontStyle:'bold'},
+      alternateRowStyles:{fillColor:[18,24,38]},bodyStyles:{fillColor:[17,24,37],textColor:[200,215,235]},margin:{left:m,right:m},
+      columnStyles:{0:{cellWidth:16},1:{cellWidth:38},2:{cellWidth:15},3:{cellWidth:38},4:{cellWidth:15},5:{cellWidth:38},6:{cellWidth:15},7:{cellWidth:20}},
+      didParseCell:(d)=>{
+        if([2,4,6].includes(d.column.index)&&d.section==='body'){
+          const v=d.cell.raw;d.cell.styles.textColor=v==='High'?[248,113,113]:v==='Critical'?[216,180,254]:v==='Medium'?[251,191,36]:v==='Low'?[74,222,128]:[80,100,120];
+        }
+      }
+    });
+    y=pdoc.lastAutoTable.finalY+8;
+  }
+  // Approval & notes
+  if(s.approver&&s.approver.name){
+    if(y>250){pdoc.addPage();y=20;}
+    pdoc.setFontSize(9);pdoc.setFont('helvetica','bold');pdoc.setTextColor(200,215,235);
+    pdoc.text('Approval Signature',m,y);y+=5;
+    pdoc.setFont('helvetica','normal');pdoc.setTextColor(160,190,220);
+    pdoc.text(`Name: ${s.approver.name}   Title: ${s.approver.title||'—'}   Date: ${s.approver.date||'—'}`,m,y);y+=8;
+  }
+  if(s.notes){
+    pdoc.setFontSize(9);pdoc.setFont('helvetica','bold');pdoc.setTextColor(200,215,235);
+    pdoc.text('Notes',m,y);y+=4;
+    pdoc.setFont('helvetica','normal');pdoc.setTextColor(160,190,220);
+    const lines=pdoc.splitTextToSize(s.notes,210-m*2);
+    pdoc.text(lines,m,y);
+  }
+  const n=pdoc.getNumberOfPages();
+  for(let i=1;i<=n;i++){pdoc.setPage(i);pdoc.setFontSize(7.5);pdoc.setTextColor(100);pdoc.text(`Page ${i} of ${n}  ·  Confidential  ·  Pakistan Islamia HSS Sharjah`,105,292,{align:'center'});}
+  const safe=(s.conductedBy||'record').replace(/\s+/g,'-').replace(/[^a-zA-Z0-9-]/g,'');
+  pdoc.save(`risk-${s.type}-${safe}-${s.submitDate||'na'}.pdf`);
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+async function initApp(){
+  await loadData();
+  renderOverview();renderRecords();renderFlagged();renderRisks();
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('dailyDate').value=today;
+  document.getElementById('weeklyDate').value=today;
+  document.getElementById('monthlyMonth').value=today.slice(0,7);
+  loadDaily();loadWeekly();loadMonthly();
+}
+
+if(sessionStorage.getItem('ra_auth')==='1') setTimeout(initApp,600);
+</script>
+</body>
+</html>
