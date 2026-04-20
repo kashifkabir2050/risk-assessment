@@ -306,23 +306,28 @@ tr:hover td{background:var(--bg3);}
   import { getFirestore, collection, getDocs, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
-    apiKey: "AIzaSyC4fRbW0wzRJQb5lcXZ6oHHKYp2nbGTESM",
-    authDomain: "risk-assessment-portal.firebaseapp.com",
-    projectId: "risk-assessment-portal",
-    storageBucket: "risk-assessment-portal.firebasestorage.app",
+    apiKey:            "AIzaSyC4fRbW0wzRJQb5lcXZ6oHHKYp2nbGTESM",
+    authDomain:        "risk-assessment-portal.firebaseapp.com",
+    projectId:         "risk-assessment-portal",
+    storageBucket:     "risk-assessment-portal.firebasestorage.app",
     messagingSenderId: "435070454511",
-    appId: "1:435070454511:web:d3bc4c3fe11bcc5759291a"
+    appId:             "1:435070454511:web:d3bc4c3fe11bcc5759291a"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db  = getFirestore(app);
-  window.__ra_db         = db;
-  window.__ra_getDocs    = getDocs;
-  window.__ra_deleteDoc  = deleteDoc;
-  window.__ra_doc        = doc;
-  window.__ra_query      = query;
-  window.__ra_collection = collection;
-  window.__ra_orderBy    = orderBy;
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+    window.__ra_db         = db;
+    window.__ra_getDocs    = getDocs;
+    window.__ra_deleteDoc  = deleteDoc;
+    window.__ra_doc        = doc;
+    window.__ra_query      = query;
+    window.__ra_collection = collection;
+    window.__ra_orderBy    = orderBy;
+    console.log("Firebase connected OK");
+  } catch(e) {
+    console.error("Firebase init failed:", e);
+  }
 </script>
 
 <script>

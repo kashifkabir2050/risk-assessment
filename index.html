@@ -272,20 +272,25 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
   import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
-    apiKey: "AIzaSyC4fRbW0wzRJQb5lcXZ6oHHKYp2nbGTESM",
-    authDomain: "risk-assessment-portal.firebaseapp.com",
-    projectId: "risk-assessment-portal",
-    storageBucket: "risk-assessment-portal.firebasestorage.app",
+    apiKey:            "AIzaSyC4fRbW0wzRJQb5lcXZ6oHHKYp2nbGTESM",
+    authDomain:        "risk-assessment-portal.firebaseapp.com",
+    projectId:         "risk-assessment-portal",
+    storageBucket:     "risk-assessment-portal.firebasestorage.app",
     messagingSenderId: "435070454511",
-    appId: "1:435070454511:web:d3bc4c3fe11bcc5759291a"
+    appId:             "1:435070454511:web:d3bc4c3fe11bcc5759291a"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db  = getFirestore(app);
-  window.__ra_db         = db;
-  window.__ra_addDoc     = addDoc;
-  window.__ra_collection = collection;
-  window.__ra_ts         = serverTimestamp;
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+    window.__ra_db         = db;
+    window.__ra_addDoc     = addDoc;
+    window.__ra_collection = collection;
+    window.__ra_ts         = serverTimestamp;
+    console.log("Firebase connected OK");
+  } catch(e) {
+    console.error("Firebase init failed:", e);
+  }
 </script>
 
 <script>
@@ -500,19 +505,17 @@ async function handleSubmit() {
 
   try {
     if (window.__ra_db && window.__ra_addDoc) {
-      await window.__ra_addDoc(window.__ra_collection(window.__ra_db, 'risk_assessments'), submission);
+      const docRef = await window.__ra_addDoc(window.__ra_collection(window.__ra_db, 'risk_assessments'), submission);
+      console.log("Saved to Firebase, ID:", docRef.id);
     } else {
-      // localStorage fallback
-      const ex = JSON.parse(localStorage.getItem('ra_submissions') || '[]');
-      submission.submittedAt = new Date().toISOString();
-      submission.id = 'local_' + Date.now();
-      ex.push(submission);
-      localStorage.setItem('ra_submissions', JSON.stringify(ex));
+      // Firebase not ready — show error instead of silently using localStorage
+      throw new Error('Firebase not connected. Please refresh the page and try again. If problem persists, check your internet connection.');
     }
     document.getElementById('mainForm').style.display = 'none';
     document.getElementById('successScreen').style.display = 'block';
   } catch(e) {
-    errEl.textContent = 'Save failed: ' + e.message + '. Please try again.';
+    console.error("Submit error:", e);
+    errEl.textContent = 'Save failed: ' + e.message;
     errEl.style.display = 'block';
     btn.disabled = false;
     btn.textContent = 'Submit Assessment';
