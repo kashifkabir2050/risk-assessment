@@ -268,23 +268,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
 <!-- Firebase -->
 <script type="module">
- // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyC4fRbW0wzRJQb5lcXZ6oHHKYp2nbGTESM",
-  authDomain: "risk-assessment-portal.firebaseapp.com",
-  projectId: "risk-assessment-portal",
-  storageBucket: "risk-assessment-portal.firebasestorage.app",
-  messagingSenderId: "435070454511",
-  appId: "1:435070454511:web:d3bc4c3fe11bcc5759291a"
-};
+  const firebaseConfig = {
+    apiKey: "AIzaSyC4fRbW0wzRJQb5lcXZ6oHHKYp2nbGTESM",
+    authDomain: "risk-assessment-portal.firebaseapp.com",
+    projectId: "risk-assessment-portal",
+    storageBucket: "risk-assessment-portal.firebasestorage.app",
+    messagingSenderId: "435070454511",
+    appId: "1:435070454511:web:d3bc4c3fe11bcc5759291a"
+  };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
   window.__ra_db         = db;
   window.__ra_addDoc     = addDoc;
   window.__ra_collection = collection;
