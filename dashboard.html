@@ -348,7 +348,9 @@ function doLogin(){
     document.getElementById('loginPage').style.display='none';
     document.getElementById('app').style.cssText='display:flex;flex-direction:column;';
     initApp();
-  } else { document.getElementById('loginErr').style.display='block'; }
+  } else {
+    document.getElementById('loginErr').style.display='block';
+  }
 }
 function doLogout(){ _setAuth(false); location.reload(); }
 if(_getAuth()){
