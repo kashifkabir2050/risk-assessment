@@ -300,30 +300,28 @@ tr:hover td{background:var(--bg3);}
   </div>
 </div>
 
-<!-- Firebase -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, getDocs, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey:            "AIzaSyC4fRbW0wzRJQb5lcXZ6oHHKYp2nbGTESM",
-    authDomain:        "risk-assessment-portal.firebaseapp.com",
-    projectId:         "risk-assessment-portal",
-    storageBucket:     "risk-assessment-portal.firebasestorage.app",
-    messagingSenderId: "435070454511",
-    appId:             "1:435070454511:web:d3bc4c3fe11bcc5759291a"
-  };
-
+<!-- Firebase compat (no module scope, no defer issue) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
   try {
-    const app = initializeApp(firebaseConfig);
-    const db  = getFirestore(app);
-    window.__ra_db         = db;
-    window.__ra_getDocs    = getDocs;
-    window.__ra_deleteDoc  = deleteDoc;
-    window.__ra_doc        = doc;
-    window.__ra_query      = query;
-    window.__ra_collection = collection;
-    window.__ra_orderBy    = orderBy;
+    const _app = firebase.initializeApp({
+      apiKey:            "AIzaSyC4fRbW0wzRJQb5lcXZ6oHHKYp2nbGTESM",
+      authDomain:        "risk-assessment-portal.firebaseapp.com",
+      projectId:         "risk-assessment-portal",
+      storageBucket:     "risk-assessment-portal.firebasestorage.app",
+      messagingSenderId: "435070454511",
+      appId:             "1:435070454511:web:d3bc4c3fe11bcc5759291a"
+    });
+    const _db = firebase.firestore();
+    window.__ra_db         = _db;
+    window.__ra_getDocs    = (q) => q.get();
+    window.__ra_deleteDoc  = (ref) => ref.delete();
+    window.__ra_doc        = (db, col, id) => db.collection(col).doc(id);
+    window.__ra_query      = (colRef, ...constraints) => constraints.reduce((q,c)=>c(q), colRef);
+    window.__ra_collection = (db, col) => db.collection(col);
+    window.__ra_orderBy    = (field, dir) => (q) => q.orderBy(field, dir);
+    window.__ra_snapMap    = (snap) => snap.docs.map(d => ({id: d.id, ...d.data()}));
     console.log("Firebase connected OK");
   } catch(e) {
     console.error("Firebase init failed:", e);
@@ -364,10 +362,9 @@ let chartReg={};
 
 // ── LOAD DATA ─────────────────────────────────────────────────
 async function loadData(){
-  if(window.__ra_db && window.__ra_getDocs){
+  if(window.__ra_db){
     try{
-      const q=window.__ra_query(window.__ra_collection(window.__ra_db,'risk_assessments'),window.__ra_orderBy('submitDate','desc'));
-      const snap=await window.__ra_getDocs(q);
+      const snap=await window.__ra_db.collection('risk_assessments').orderBy('submitDate','desc').get();
       allData=snap.docs.map(d=>({id:d.id,...d.data()}));
       return;
     }catch(e){console.warn('Firebase fallback',e);}
@@ -643,8 +640,8 @@ function closeModal(){document.getElementById('delModal').classList.remove('open
 async function execDelete(id){
   closeModal();
   try{
-    if(window.__ra_db&&window.__ra_deleteDoc&&window.__ra_doc)
-      await window.__ra_deleteDoc(window.__ra_doc(window.__ra_db,'risk_assessments',id));
+    if(window.__ra_db)
+      await window.__ra_db.collection('risk_assessments').doc(id).delete();
     allData=allData.filter(s=>s.id!==id);
     renderOverview(); renderRecords(); renderFlagged(); renderRisks();
     loadDaily(); loadWeekly(); loadMonthly();
