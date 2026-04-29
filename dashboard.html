@@ -411,7 +411,8 @@ const mk=(id,cfg)=>{if(chartReg[id]){chartReg[id].destroy();}const el=document.g
 const cDef={plugins:{legend:{labels:{color:'#7a90a8',font:{family:'Inter',size:11}}}},scales:{x:{ticks:{color:'#3d5068',font:{family:'Inter',size:11}},grid:{color:'#1e2d45'}},y:{ticks:{color:'#3d5068',font:{family:'Inter',size:11}},grid:{color:'#1e2d45'}}}};
 const avg=a=>a.length?a.reduce((x,b)=>x+b,0)/a.length:0;
 const levelColor=l=>l==='Critical'?'#d8b4fe':l==='High'?'#f87171':l==='Medium'?'#fbbf24':l==='Low'?'#4ade80':'#3d5068';
-function riskBadge(highRisk){return highRisk?'<span class="badge badge-red">⚠ High/Critical</span>':'<span class="badge badge-green">✓ Low</span>';}
+function getMaxLevel(s){const lc=s.levelCounts||{};if(lc.Critical>0)return'Critical';if(lc.High>0)return'High';if(lc.Medium>0)return'Medium';if(lc.Low>0)return'Low';return'None';}
+function riskBadge(s){const lvl=getMaxLevel(s);if(lvl==='Critical')return'<span class="badge badge-red">⚠ Critical</span>';if(lvl==='High')return'<span class="badge badge-red">⚠ High Risk</span>';if(lvl==='Medium')return'<span class="badge badge-amber">● Medium</span>';if(lvl==='Low')return'<span class="badge badge-green">✓ Low</span>';return'<span class="badge badge-none">✓ None</span>';}
 function typeLabel(t){return t==='classroom'?'Classroom':'Outdoor';}
 function typeColor(t){return t==='classroom'?'#3b82f6':'#22c55e';}
 function countLevels(subs){
@@ -620,7 +621,7 @@ function renderTable(id,subs,showAll=false){
         <td>${s.conductedBy||'—'}</td>
         <td style="color:#f87171;font-weight:600">${lc.High||0}</td>
         <td style="color:#d8b4fe;font-weight:600">${lc.Critical||0}</td>
-        <td>${riskBadge(s.highRisk)}</td>
+        <td>${riskBadge(s)}</td>
         <td>
           ${s.id?`<button class="btn-pdf-sm" onclick="downloadSinglePDF('${s.id}')">PDF</button>
           <button class="btn-del" onclick="confirmDel('${s.id}','${(s.conductedBy||'').replace(/'/g,"\\'")}')">✕ Delete</button>`:'—'}
@@ -677,7 +678,7 @@ function pdfStatBoxes(doc,y,stats){
 function subsToTableRows(subs){
   return subs.map(s=>{
     const lc=s.levelCounts||{};
-    return[s.submitDate||'—',s.type==='classroom'?'Classroom':'Outdoor',s.classroom||'—',s.conductedBy||'—',String(lc.High||0),String(lc.Critical||0),s.highRisk?'⚠ High':'✓ Low'];
+    return[s.submitDate||'—',s.type==='classroom'?'Classroom':'Outdoor',s.classroom||'—',s.conductedBy||'—',String(lc.High||0),String(lc.Critical||0),(()=>{const lvl=getMaxLevel(s);if(lvl==='Critical')return'⚠ Critical';if(lvl==='High')return'⚠ High Risk';if(lvl==='Medium')return'● Medium';if(lvl==='Low')return'✓ Low';return'✓ None';})()];
   });
 }
 
@@ -729,7 +730,7 @@ function downloadPDF(section){
     doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(200,215,235);
     doc.text('Submission Records',m,y);y+=3;
     doc.autoTable({startY:y,head:[['Date','Type','Classroom','Conducted By','High','Critical','Status']],body:subsToTableRows(subs),styles:{fontSize:8,cellPadding:2.5},headStyles:{fillColor:[20,30,50],textColor:[200,220,255],fontStyle:'bold'},alternateRowStyles:{fillColor:[18,24,38]},bodyStyles:{fillColor:[17,24,37],textColor:[200,215,235]},margin:{left:m,right:m},
-    didParseCell:(d)=>{if(d.column.index===6&&d.section==='body'){d.cell.styles.textColor=d.cell.raw.includes('⚠')?[248,113,113]:[74,222,128];}}});
+    didParseCell:(d)=>{if(d.column.index===6&&d.section==='body'){const v=d.cell.raw;d.cell.styles.textColor=v.includes('Critical')?[216,180,254]:v.includes('⚠')?[248,113,113]:v.includes('Medium')?[251,191,36]:v.includes('Low')?[74,222,128]:[80,100,120];}}}); 
   }
   // Risk analysis section
   if(section==='overview'||section==='risks'){
