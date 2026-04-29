@@ -333,16 +333,25 @@ tr:hover td{background:var(--bg3);}
 <script>
 // ── AUTH ──────────────────────────────────────────────────────
 const ADMIN_USER='admin', ADMIN_PASS='risk2024';
+let _authed=false;
+function _setAuth(v){
+  _authed=v;
+  try{if(v)sessionStorage.setItem('ra_auth','1');else sessionStorage.removeItem('ra_auth');}catch(e){}
+}
+function _getAuth(){
+  if(_authed)return true;
+  try{return sessionStorage.getItem('ra_auth')==='1';}catch(e){return false;}
+}
 function doLogin(){
   if(document.getElementById('lu').value.trim()===ADMIN_USER && document.getElementById('lp').value===ADMIN_PASS){
-    sessionStorage.setItem('ra_auth','1');
+    _setAuth(true);
     document.getElementById('loginPage').style.display='none';
     document.getElementById('app').style.cssText='display:flex;flex-direction:column;';
     initApp();
   } else { document.getElementById('loginErr').style.display='block'; }
 }
-function doLogout(){ sessionStorage.removeItem('ra_auth'); location.reload(); }
-if(sessionStorage.getItem('ra_auth')==='1'){
+function doLogout(){ _setAuth(false); location.reload(); }
+if(_getAuth()){
   document.getElementById('loginPage').style.display='none';
   document.getElementById('app').style.cssText='display:flex;flex-direction:column;';
 }
@@ -831,7 +840,7 @@ async function initApp(){
   loadDaily();loadWeekly();loadMonthly();
 }
 
-if(sessionStorage.getItem('ra_auth')==='1') setTimeout(initApp,600);
+if(_getAuth()) setTimeout(initApp,600);
 </script>
 </body>
 </html>
