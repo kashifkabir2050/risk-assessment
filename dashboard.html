@@ -300,28 +300,30 @@ tr:hover td{background:var(--bg3);}
   </div>
 </div>
 
-<!-- Firebase compat (no module scope, no defer issue) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, getDocs, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyC4fRbW0wzRJQb5lcXZ6oHHKYp2nbGTESM",
+    authDomain:        "risk-assessment-portal.firebaseapp.com",
+    projectId:         "risk-assessment-portal",
+    storageBucket:     "risk-assessment-portal.firebasestorage.app",
+    messagingSenderId: "435070454511",
+    appId:             "1:435070454511:web:d3bc4c3fe11bcc5759291a"
+  };
+
   try {
-    const _app = firebase.initializeApp({
-      apiKey:            "AIzaSyC4fRbW0wzRJQb5lcXZ6oHHKYp2nbGTESM",
-      authDomain:        "risk-assessment-portal.firebaseapp.com",
-      projectId:         "risk-assessment-portal",
-      storageBucket:     "risk-assessment-portal.firebasestorage.app",
-      messagingSenderId: "435070454511",
-      appId:             "1:435070454511:web:d3bc4c3fe11bcc5759291a"
-    });
-    const _db = firebase.firestore();
-    window.__ra_db         = _db;
-    window.__ra_getDocs    = (q) => q.get();
-    window.__ra_deleteDoc  = (ref) => ref.delete();
-    window.__ra_doc        = (db, col, id) => db.collection(col).doc(id);
-    window.__ra_query      = (colRef, ...constraints) => constraints.reduce((q,c)=>c(q), colRef);
-    window.__ra_collection = (db, col) => db.collection(col);
-    window.__ra_orderBy    = (field, dir) => (q) => q.orderBy(field, dir);
-    window.__ra_snapMap    = (snap) => snap.docs.map(d => ({id: d.id, ...d.data()}));
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+    window.__ra_db         = db;
+    window.__ra_getDocs    = getDocs;
+    window.__ra_deleteDoc  = deleteDoc;
+    window.__ra_doc        = doc;
+    window.__ra_query      = query;
+    window.__ra_collection = collection;
+    window.__ra_orderBy    = orderBy;
     console.log("Firebase connected OK");
   } catch(e) {
     console.error("Firebase init failed:", e);
@@ -331,19 +333,16 @@ tr:hover td{background:var(--bg3);}
 <script>
 // ── AUTH ──────────────────────────────────────────────────────
 const ADMIN_USER='admin', ADMIN_PASS='risk2024';
-let _authed=false;
-function _setAuth(v){_authed=v;try{if(v)sessionStorage.setItem('ra_auth','1');else sessionStorage.removeItem('ra_auth');}catch(e){}}
-function _getAuth(){if(_authed)return true;try{return sessionStorage.getItem('ra_auth')==='1';}catch(e){return false;}}
 function doLogin(){
   if(document.getElementById('lu').value.trim()===ADMIN_USER && document.getElementById('lp').value===ADMIN_PASS){
-    _setAuth(true);
+    sessionStorage.setItem('ra_auth','1');
     document.getElementById('loginPage').style.display='none';
     document.getElementById('app').style.cssText='display:flex;flex-direction:column;';
     initApp();
   } else { document.getElementById('loginErr').style.display='block'; }
 }
-function doLogout(){ _setAuth(false); location.reload(); }
-if(_getAuth()){
+function doLogout(){ sessionStorage.removeItem('ra_auth'); location.reload(); }
+if(sessionStorage.getItem('ra_auth')==='1'){
   document.getElementById('loginPage').style.display='none';
   document.getElementById('app').style.cssText='display:flex;flex-direction:column;';
 }
@@ -362,9 +361,10 @@ let chartReg={};
 
 // ── LOAD DATA ─────────────────────────────────────────────────
 async function loadData(){
-  if(window.__ra_db){
+  if(window.__ra_db && window.__ra_getDocs){
     try{
-      const snap=await window.__ra_db.collection('risk_assessments').orderBy('submitDate','desc').get();
+      const q=window.__ra_query(window.__ra_collection(window.__ra_db,'risk_assessments'),window.__ra_orderBy('submitDate','desc'));
+      const snap=await window.__ra_getDocs(q);
       allData=snap.docs.map(d=>({id:d.id,...d.data()}));
       return;
     }catch(e){console.warn('Firebase fallback',e);}
@@ -411,8 +411,7 @@ const mk=(id,cfg)=>{if(chartReg[id]){chartReg[id].destroy();}const el=document.g
 const cDef={plugins:{legend:{labels:{color:'#7a90a8',font:{family:'Inter',size:11}}}},scales:{x:{ticks:{color:'#3d5068',font:{family:'Inter',size:11}},grid:{color:'#1e2d45'}},y:{ticks:{color:'#3d5068',font:{family:'Inter',size:11}},grid:{color:'#1e2d45'}}}};
 const avg=a=>a.length?a.reduce((x,b)=>x+b,0)/a.length:0;
 const levelColor=l=>l==='Critical'?'#d8b4fe':l==='High'?'#f87171':l==='Medium'?'#fbbf24':l==='Low'?'#4ade80':'#3d5068';
-function getMaxLevel(s){const lc=s.levelCounts||{};if(lc.Critical>0)return'Critical';if(lc.High>0)return'High';if(lc.Medium>0)return'Medium';if(lc.Low>0)return'Low';return'None';}
-function riskBadge(s){const lvl=getMaxLevel(s);if(lvl==='Critical')return'<span class="badge badge-red">⚠ Critical</span>';if(lvl==='High')return'<span class="badge badge-red">⚠ High Risk</span>';if(lvl==='Medium')return'<span class="badge badge-amber">● Medium</span>';if(lvl==='Low')return'<span class="badge badge-green">✓ Low</span>';return'<span class="badge badge-none">✓ None</span>';}
+function riskBadge(highRisk){return highRisk?'<span class="badge badge-red">⚠ High/Critical</span>':'<span class="badge badge-green">✓ Low</span>';}
 function typeLabel(t){return t==='classroom'?'Classroom':'Outdoor';}
 function typeColor(t){return t==='classroom'?'#3b82f6':'#22c55e';}
 function countLevels(subs){
@@ -621,7 +620,7 @@ function renderTable(id,subs,showAll=false){
         <td>${s.conductedBy||'—'}</td>
         <td style="color:#f87171;font-weight:600">${lc.High||0}</td>
         <td style="color:#d8b4fe;font-weight:600">${lc.Critical||0}</td>
-        <td>${riskBadge(s)}</td>
+        <td>${riskBadge(s.highRisk)}</td>
         <td>
           ${s.id?`<button class="btn-pdf-sm" onclick="downloadSinglePDF('${s.id}')">PDF</button>
           <button class="btn-del" onclick="confirmDel('${s.id}','${(s.conductedBy||'').replace(/'/g,"\\'")}')">✕ Delete</button>`:'—'}
@@ -640,8 +639,8 @@ function closeModal(){document.getElementById('delModal').classList.remove('open
 async function execDelete(id){
   closeModal();
   try{
-    if(window.__ra_db)
-      await window.__ra_db.collection('risk_assessments').doc(id).delete();
+    if(window.__ra_db&&window.__ra_deleteDoc&&window.__ra_doc)
+      await window.__ra_deleteDoc(window.__ra_doc(window.__ra_db,'risk_assessments',id));
     allData=allData.filter(s=>s.id!==id);
     renderOverview(); renderRecords(); renderFlagged(); renderRisks();
     loadDaily(); loadWeekly(); loadMonthly();
@@ -678,7 +677,7 @@ function pdfStatBoxes(doc,y,stats){
 function subsToTableRows(subs){
   return subs.map(s=>{
     const lc=s.levelCounts||{};
-    return[s.submitDate||'—',s.type==='classroom'?'Classroom':'Outdoor',s.classroom||'—',s.conductedBy||'—',String(lc.High||0),String(lc.Critical||0),(()=>{const lvl=getMaxLevel(s);if(lvl==='Critical')return'⚠ Critical';if(lvl==='High')return'⚠ High Risk';if(lvl==='Medium')return'● Medium';if(lvl==='Low')return'✓ Low';return'✓ None';})()];
+    return[s.submitDate||'—',s.type==='classroom'?'Classroom':'Outdoor',s.classroom||'—',s.conductedBy||'—',String(lc.High||0),String(lc.Critical||0),s.highRisk?'⚠ High':'✓ Low'];
   });
 }
 
@@ -730,7 +729,7 @@ function downloadPDF(section){
     doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(200,215,235);
     doc.text('Submission Records',m,y);y+=3;
     doc.autoTable({startY:y,head:[['Date','Type','Classroom','Conducted By','High','Critical','Status']],body:subsToTableRows(subs),styles:{fontSize:8,cellPadding:2.5},headStyles:{fillColor:[20,30,50],textColor:[200,220,255],fontStyle:'bold'},alternateRowStyles:{fillColor:[18,24,38]},bodyStyles:{fillColor:[17,24,37],textColor:[200,215,235]},margin:{left:m,right:m},
-    didParseCell:(d)=>{if(d.column.index===6&&d.section==='body'){const v=d.cell.raw;d.cell.styles.textColor=v.includes('Critical')?[216,180,254]:v.includes('⚠')?[248,113,113]:v.includes('Medium')?[251,191,36]:v.includes('Low')?[74,222,128]:[80,100,120];}}}); 
+    didParseCell:(d)=>{if(d.column.index===6&&d.section==='body'){d.cell.styles.textColor=d.cell.raw.includes('⚠')?[248,113,113]:[74,222,128];}}});
   }
   // Risk analysis section
   if(section==='overview'||section==='risks'){
@@ -817,7 +816,7 @@ async function initApp(){
   loadDaily();loadWeekly();loadMonthly();
 }
 
-if(_getAuth()) setTimeout(initApp,600);
+if(sessionStorage.getItem('ra_auth')==='1') setTimeout(initApp,600);
 </script>
 </body>
 </html>
